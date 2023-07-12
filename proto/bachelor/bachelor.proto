@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package proto;
+option go_package = "./proto";
+
+import "thirdParty/google/api/annotations.proto";
+
+// The greeting service definition
+service Greeter {
+  rpc RndGenerator(RndRequest) returns (RndReply) {
+    // google.api.http spécifie méthode RPC accessible via une requête HTTP GET.
+    option (google.api.http) = {
+      get: "/api/v1/example/rndGen"
+    };
+  }
+}
+
+// paramètre d'entrée pour la méthode RndGenerator.
+message RndRequest {
+}
+
+// valeur de retour pour la méthode RndGenerator.
+message RndReply {
+  string message = 1;
+}

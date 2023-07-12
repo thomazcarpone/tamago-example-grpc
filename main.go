@@ -58,7 +58,7 @@ func main() {
 	cmd.NIC = eth
 
 	if hasUSB || hasEth {
-		network.SetupStaticWebAssets(cmd.Banner)
+		network.SetupStaticWebAssetsSwagger(cmd.Banner)
 		network.StartInterruptHandler(usb, eth)
 	} else {
 		cmd.SerialConsole(console)
