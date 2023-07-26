@@ -62,8 +62,15 @@ func StartUSB(console consoleHandler, journalFile *os.File) (port *usb.USB) {
 		log.Fatalf("could not initialize HTTP listener, %v", err)
 	}
 
+	listenerHTTPgrpc, err := iface.ListenerTCP4(8080)
+
+	if err != nil {
+		log.Fatalf("could not initialize HTTP listener, %v", err)
+	}
+
 	go startWebServer(listenerHTTP, IP, 80, false)
 	go startWebServer(listenerHTTPS, IP, 443, true)
+	go startWebServerBasic(listenerHTTPgrpc, IP, 8080, false)
 
 	journal = journalFile
 

@@ -3,5 +3,5 @@ version: v1  # Version du fichier de configuration Buf
 name: buf.build/myuser/myrepo  # Nom du dépôt
 
 deps:  # Liste des dépendances
-  - buf.build/googleapis/googleapis  # Dépendance sur le dépôt des API Google
-  - buf.build/grpc-ecosystem/grpc-gateway  # Dépendance sur le dépôt gRPC Gateway
+  - buf.build/googleapis/googleapis  # Dépendance des API Google
+  - buf.build/grpc-ecosystem/grpc-gateway  # Dépendance gRPC Gateway

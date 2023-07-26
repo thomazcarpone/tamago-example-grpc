@@ -1,8 +1,12 @@
 {
   "swagger": "2.0",
   "info": {
-    "title": "bachelor/bachelor.proto",
-    "version": "version not set"
+    "title": "Travail de bachelor gRPC - TamaGo et Swagger",
+    "version": "0.1",
+    "contact": {
+      "name": "Thomas Cheseaux",
+      "email": "thomas.cheseaux@students.hevs.ch"
+    }
   },
   "tags": [
     {

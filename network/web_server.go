@@ -18,7 +18,6 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
-	"embed"
 	"encoding/pem"
 	"fmt"
 	"html"
@@ -30,18 +29,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
-
 	bachelorpb "github.com/usbarmory/tamago-example/proto/bachelor"
-)
-
-//go:embed static/*
-var static embed.FS
-
-const (
-	pathSwaggerJson = "swagger/swagger-ui/example/hello_world.swagger.json" // chemin fichier JSON Swagger
 )
 
 func flushingHandler(h http.Handler) http.HandlerFunc {
@@ -140,114 +128,6 @@ func SetupStaticWebAssets(banner string) {
 	static := http.FileServer(http.Dir("/"))
 	staticHandler := flushingHandler(static)
 	http.Handle("/", http.StripPrefix("/", staticHandler))
-}
-
-func startWebServerBasic(listener net.Listener, addr string, port uint16, https bool) {
-	var err error
-	var srv http.Server
-	
-	if https {
-		srv := &http.Server{
-			Addr: addr + ":" + fmt.Sprintf("%d", port),
-		}
-
-		TLSCert, TLSKey, err := generateTLSCerts(net.ParseIP(addr))
-
-		if err != nil {
-			log.Fatal("TLS cert|key error: ", err)
-		}
-
-		log.Printf("generated TLS certificate:\n%s", TLSCert)
-		log.Printf("generated TLS key:\n%s", TLSKey)
-
-		certificate, err := tls.X509KeyPair(TLSCert, TLSKey)
-
-		if err != nil {
-			log.Fatal("X509KeyPair error: ", err)
-		}
-
-		srv.TLSConfig = &tls.Config{
-			Certificates: []tls.Certificate{certificate},
-		}
-	}
-
-	log.Printf("starting web server at %s:%d", addr, port)
-
-	if https {
-		err = srv.ServeTLS(listener, "", "")
-	} else {
-		s := grpc.NewServer()
-		bachelorpb.RegisterGreeterServer(s, &server{})
-		log.Println("Serving gRPC on 10.0.0.1:8080")
-		go func() {
-			log.Fatalln(s.Serve(listener))
-		}()
-
-		conn, err := grpc.DialContext(
-			context.Background(),
-			"10.0.0.1:8080",
-			grpc.WithBlock(),
-			grpc.WithTransportCredentials(insecure.NewCredentials()),
-		)
-		if err != nil {
-			log.Fatalln("Failed to dial server:", err)
-		}
-
-		// Création de la passerelle gRPC
-		gwmux := runtime.NewServeMux()
-		// Implémentation de la gestion des requêtes liées à Swagger
-		muxSwagger := http.NewServeMux()
-		muxSwagger.Handle("/", gwmux) //routes par défaut gérées par le gwmux
-		 
-		// Enregistrement du service 'Greeter' avec gwmux
-		err = bachelorpb.RegisterGreeterHandler(context.Background(), gwmux, conn)
-		
-
-		// Activation de swagger si on trouve le swagger.json
-		if _, err := os.Stat("swagger/swagger-ui/example/hello_world.swagger.json"); err == nil {
-			log.Println("Swagger configuration found")
-			muxSwagger.HandleFunc("swagger/swagger-ui/example/swagger.json", func(w http.ResponseWriter, r *http.Request){
-				// Indique au serveur de renvoyer le contenu du swagger.json quand le fichier est appelé
-				http.ServeFile(w, r, pathSwaggerJson)
-			})
-
-			// Indique racine swagger-ui
-			fs := http.FileServer(http.Dir("swagger/swagger-ui"))
-			// Appel l'url "swagger-ui", affichage du contenu du dossier
-			muxSwagger.Handle("/swagger-ui/", http.StripPrefix("/swagger-ui/", fs))
-		}
-				
-		if err != nil {
-			log.Fatalln("Failed to register gateway:", err)
-		}
-
-		gwServer := &http.Server{
-			Addr:    ":8090",
-			Handler: gwmux,
-		}
-
-		log.Println("Serving gRPC-Gateway on http://10.0.0.1:8090")
-		// Lancement serveur gRPC-Gateway
-		log.Fatalln(gwServer.ListenAndServe())
-		}
-
-		log.Fatal("server returned unexpectedly ", err)
-}
-
-type server struct{
-	bachelorpb.UnimplementedGreeterServer
-}
-
-func NewServer() *server {
-	return &server{}
-}
-
-func (s *server) RndGenerator(ctx context.Context, _ *bachelorpb.RndRequest) (*bachelorpb.RndReply, error) {
-	// Génération tableau de bytes aléatoire
-	buf := make([]byte, 32)
-	rand.Read(buf)
-    
-	return &bachelorpb.RndReply{Message: fmt.Sprintf("%x", buf)}, nil // conversion tablean en hexadécimale
 }
 
 func startWebServer(listener net.Listener, addr string, port uint16, https bool) {
